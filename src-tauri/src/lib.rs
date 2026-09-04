@@ -208,6 +208,12 @@ mod app_init {
             cmd::get_unlock_items,
             cmd::check_media_unlock,
             cmd::check_media_unlock_item,
+            cmd::account_send_code,
+            cmd::account_login,
+            cmd::account_logout,
+            cmd::account_restore_session,
+            cmd::account_refresh_subscription,
+            cmd::account_get_state,
         ]
     }
 }
@@ -353,7 +359,7 @@ pub fn run() -> std::process::ExitCode {
 
             #[cfg(target_os = "macos")]
             if let Some(window) = _app_handle.get_webview_window("main") {
-                let _ = window.set_title("Clash Verge");
+                let _ = window.set_title("XC");
             }
         }
 

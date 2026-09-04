@@ -1,3 +1,4 @@
+pub mod account;
 mod backup;
 mod clash;
 mod config;

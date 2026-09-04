@@ -67,6 +67,8 @@ import { debugLog } from '@/utils/debug'
 
 // 与 src-tauri/src/main.rs 的 worker_limit 上限(8)保持一致，避免前后端更新风暴不对齐
 const PROFILE_UPDATE_WORKER_LIMIT = 8
+// P0: hide primary add-remote-URL; set true for advanced/manual profiles.
+const ALLOW_MANUAL_REMOTE_URL = false
 const PROFILE_SWITCH_LOADING_DELAY = 400
 const profilePointerSensor = PointerSensor.configure({
   activationConstraints: () => undefined,
@@ -824,7 +826,7 @@ const ProfilePage = () => {
         </Box>
       }
     >
-      <Stack
+            <Stack
         direction="row"
         spacing={1}
         sx={{
@@ -836,56 +838,60 @@ const ProfilePage = () => {
           alignItems: 'center',
         }}
       >
-        <BaseStyledTextField
-          value={url}
-          variant="outlined"
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(event) => {
-            if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
-              return
-            }
-            if (!url || disabled || loading) {
-              return
-            }
-            event.preventDefault()
-            void onImport()
-          }}
-          placeholder={t('profiles.page.importForm.placeholder')}
-          slotProps={{
-            input: {
-              sx: { pr: 1 },
-              endAdornment: !url ? (
-                <IconButton
-                  size="small"
-                  sx={{ p: 0.5 }}
-                  title={t('profiles.page.importForm.actions.paste')}
-                  onClick={onCopyLink}
-                >
-                  <ContentPasteRounded fontSize="inherit" />
-                </IconButton>
-              ) : (
-                <IconButton
-                  size="small"
-                  sx={{ p: 0.5 }}
-                  title={t('shared.actions.clear')}
-                  onClick={() => setUrl('')}
-                >
-                  <ClearRounded fontSize="inherit" />
-                </IconButton>
-              ),
-            },
-          }}
-        />
-        <Button
-          disabled={!url || disabled}
-          loading={loading}
-          variant="contained"
-          size="small"
-          sx={{ borderRadius: '6px' }}
-          onClick={onImport}
-        >
-          {t('profiles.page.actions.import')}
-        </Button>
+        {ALLOW_MANUAL_REMOTE_URL ? (
+          <>
+            <BaseStyledTextField
+              value={url}
+              variant="outlined"
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
+                  return
+                }
+                if (!url || disabled || loading) {
+                  return
+                }
+                event.preventDefault()
+                void onImport()
+              }}
+              placeholder={t('profiles.page.importForm.placeholder')}
+              slotProps={{
+                input: {
+                  sx: { pr: 1 },
+                  endAdornment: !url ? (
+                    <IconButton
+                      size="small"
+                      sx={{ p: 0.5 }}
+                      title={t('profiles.page.importForm.actions.paste')}
+                      onClick={onCopyLink}
+                    >
+                      <ContentPasteRounded fontSize="inherit" />
+                    </IconButton>
+                  ) : (
+                    <IconButton
+                      size="small"
+                      sx={{ p: 0.5 }}
+                      title={t('shared.actions.clear')}
+                      onClick={() => setUrl('')}
+                    >
+                      <ClearRounded fontSize="inherit" />
+                    </IconButton>
+                  ),
+                },
+              }}
+            />
+            <Button
+              disabled={!url || disabled}
+              loading={loading}
+              variant="contained"
+              size="small"
+              sx={{ borderRadius: '6px' }}
+              onClick={onImport}
+            >
+              {t('profiles.page.actions.import')}
+            </Button>
+          </>
+        ) : null}
         <Button
           variant="contained"
           size="small"

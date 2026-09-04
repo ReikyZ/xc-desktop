@@ -34,6 +34,15 @@ pub(super) async fn resolve_scheme(param: &str) -> Result<()> {
         return Ok(());
     };
 
+    if !crate::feat::account::ALLOW_MANUAL_PROFILES {
+        logging!(
+            info,
+            Type::Config,
+            "ignoring generic subscription deep link (manual profiles disabled)"
+        );
+        return Ok(());
+    }
+
     import_subscription(&url, name.as_ref()).await;
     Ok(())
 }

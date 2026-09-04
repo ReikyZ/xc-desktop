@@ -1,3 +1,26 @@
+# XC
+
+Desktop client based on [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev) (GPL-3.0). Upstream copyright and license notices are retained.
+
+## Account login and subscription
+
+Cold start shows an email verification gate. After login the client:
+
+1. Persists the `session` cookie under the app home `account/` directory
+2. Calls `GET /api/user/subscription/token` (and `POST /api/activate` if the token is empty)
+3. Downloads Clash YAML from `/external/user/subscription/config/clash/{token}`
+4. Imports or updates the current Verge profile named `XC`
+
+Relaunch restores the session via `GET /api/user/info` and refreshes that profile without asking for a new code (until the cookie expires). Sign out clears the session, stops the core, and deletes the XC profile artifact.
+
+The primary Profiles “add remote URL” field is hidden. Set `ALLOW_MANUAL_PROFILES` in `src-tauri/src/feat/account.rs` (and `ALLOW_MANUAL_REMOTE_URL` in `src/pages/profiles.tsx`) to re-enable manual imports.
+
+API host defaults to the production endpoint and can be overridden with env `XC_API_BASE`.
+
+Distributed builds must keep this LICENSE and offer corresponding source (GPL-3.0).
+
+---
+
 <h1 align="center">
   <img src="./src-tauri/icons/icon.png" alt="Clash" width="128" />
   <br>
