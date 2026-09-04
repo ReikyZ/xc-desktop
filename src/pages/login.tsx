@@ -87,7 +87,12 @@ export default function LoginPage() {
       }}
     >
       <Paper sx={{ p: 4, width: '100%', maxWidth: 420 }} elevation={3}>
-        <Typography variant="h4" component="h1" gutterBottom fontWeight={700}>
+        <Typography
+          variant="h4"
+          component="h1"
+          gutterBottom
+          sx={{ fontWeight: 700 }}
+        >
           XC
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -133,7 +138,12 @@ export default function LoginPage() {
               {status}
             </Typography>
           ) : null}
-          <Button type="submit" variant="contained" disabled={busy} size="large">
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={busy}
+            size="large"
+          >
             {busy ? 'Signing in…' : 'Sign in'}
           </Button>
         </Stack>

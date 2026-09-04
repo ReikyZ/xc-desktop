@@ -826,87 +826,85 @@ const ProfilePage = () => {
         </Box>
       }
     >
-            <Stack
-        direction="row"
-        spacing={1}
-        sx={{
-          pt: 1,
-          mb: 0.5,
-          mx: '10px',
-          height: '36px',
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
-        {ALLOW_MANUAL_REMOTE_URL ? (
-          <>
-            <BaseStyledTextField
-              value={url}
-              variant="outlined"
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(event) => {
-                if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
-                  return
-                }
-                if (!url || disabled || loading) {
-                  return
-                }
-                event.preventDefault()
-                void onImport()
-              }}
-              placeholder={t('profiles.page.importForm.placeholder')}
-              slotProps={{
-                input: {
-                  sx: { pr: 1 },
-                  endAdornment: !url ? (
-                    <IconButton
-                      size="small"
-                      sx={{ p: 0.5 }}
-                      title={t('profiles.page.importForm.actions.paste')}
-                      onClick={onCopyLink}
-                    >
-                      <ContentPasteRounded fontSize="inherit" />
-                    </IconButton>
-                  ) : (
-                    <IconButton
-                      size="small"
-                      sx={{ p: 0.5 }}
-                      title={t('shared.actions.clear')}
-                      onClick={() => setUrl('')}
-                    >
-                      <ClearRounded fontSize="inherit" />
-                    </IconButton>
-                  ),
-                },
-              }}
-            />
-            <Button
-              disabled={!url || disabled}
-              loading={loading}
-              variant="contained"
-              size="small"
-              sx={{ borderRadius: '6px' }}
-              onClick={onImport}
-            >
-              {t('profiles.page.actions.import')}
-            </Button>
-          </>
-        ) : null}
-        <Button
-          variant="contained"
-          size="small"
-          sx={{ borderRadius: '6px' }}
-          onClick={() => viewerRef.current?.create()}
+      {ALLOW_MANUAL_REMOTE_URL ? (
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            pt: 1,
+            mb: 0.5,
+            mx: '10px',
+            height: '36px',
+            display: 'flex',
+            alignItems: 'center',
+          }}
         >
-          {t('shared.actions.new')}
-        </Button>
-      </Stack>
+          <BaseStyledTextField
+            value={url}
+            variant="outlined"
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
+                return
+              }
+              if (!url || disabled || loading) {
+                return
+              }
+              event.preventDefault()
+              void onImport()
+            }}
+            placeholder={t('profiles.page.importForm.placeholder')}
+            slotProps={{
+              input: {
+                sx: { pr: 1 },
+                endAdornment: !url ? (
+                  <IconButton
+                    size="small"
+                    sx={{ p: 0.5 }}
+                    title={t('profiles.page.importForm.actions.paste')}
+                    onClick={onCopyLink}
+                  >
+                    <ContentPasteRounded fontSize="inherit" />
+                  </IconButton>
+                ) : (
+                  <IconButton
+                    size="small"
+                    sx={{ p: 0.5 }}
+                    title={t('shared.actions.clear')}
+                    onClick={() => setUrl('')}
+                  >
+                    <ClearRounded fontSize="inherit" />
+                  </IconButton>
+                ),
+              },
+            }}
+          />
+          <Button
+            disabled={!url || disabled}
+            loading={loading}
+            variant="contained"
+            size="small"
+            sx={{ borderRadius: '6px' }}
+            onClick={onImport}
+          >
+            {t('profiles.page.actions.import')}
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            sx={{ borderRadius: '6px' }}
+            onClick={() => viewerRef.current?.create()}
+          >
+            {t('shared.actions.new')}
+          </Button>
+        </Stack>
+      ) : null}
 
       <Box
         sx={{
           pl: '10px',
           pr: '10px',
-          height: 'calc(100% - 48px)',
+          height: ALLOW_MANUAL_REMOTE_URL ? 'calc(100% - 48px)' : '100%',
           overflowY: 'auto',
         }}
       >
