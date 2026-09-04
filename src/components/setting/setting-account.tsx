@@ -5,20 +5,13 @@ import { useAccount } from '@/providers/account-provider'
 import {
   accountLogout,
   accountRefreshSubscription,
+  type AccountState,
 } from '@/services/account'
 import { errorDetail, showNotice } from '@/services/notice-service'
 
 import { SettingItem, SettingList } from './mods/setting-comp'
 
-function formatStats(account: {
-  stats?: {
-    data_remain: number
-    data_total: number
-    days_remain: number
-    days_total: number
-  } | null
-  subscription_updated_at: string | null
-}): string {
+function formatStats(account: AccountState): string {
   const parts: string[] = []
   const stats = account.stats
   if (stats) {

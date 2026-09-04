@@ -1,18 +1,15 @@
 use crate::{
     config::{
         Config, IProfiles, PrfItem, PrfOption,
-        profiles::{
-            profiles_append_item_safe, profiles_patch_item_safe, profiles_save_file_safe,
-            PROFILE_WRITE_LOCK,
-        },
+        profiles::{PROFILE_WRITE_LOCK, profiles_append_item_safe, profiles_patch_item_safe, profiles_save_file_safe},
     },
-    core::{handle, timer::Timer, CoreManager},
+    core::{CoreManager, handle, timer::Timer},
     utils::dirs,
 };
-use anyhow::{anyhow, bail, Context as _, Result};
+use anyhow::{Context as _, Result, anyhow, bail};
 use clash_verge_logging::{Type, logging, logging_error};
 use once_cell::sync::OnceCell;
-use reqwest::header::{HeaderMap, COOKIE, SET_COOKIE, USER_AGENT};
+use reqwest::header::{COOKIE, HeaderMap, SET_COOKIE, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use smartstring::alias::String as SString;
@@ -137,7 +134,9 @@ impl CookieJar {
         for value in headers.get_all(SET_COOKIE) {
             let Ok(raw) = value.to_str() else { continue };
             let Some(pair) = raw.split(';').next() else { continue };
-            let Some((name, val)) = pair.split_once('=') else { continue };
+            let Some((name, val)) = pair.split_once('=') else {
+                continue;
+            };
             let name = name.trim();
             if name.is_empty() {
                 continue;
@@ -148,8 +147,7 @@ impl CookieJar {
                 self.pairs.remove(name);
                 continue;
             }
-            self.pairs
-                .insert(name.to_string(), val.trim().to_string());
+            self.pairs.insert(name.to_string(), val.trim().to_string());
         }
     }
 }
@@ -219,18 +217,12 @@ impl AccountManager {
     }
 
     fn persist_cookies(&self) -> Result<()> {
-        let guard = self
-            .cookies
-            .lock()
-            .map_err(|_| anyhow!("cookie lock poisoned"))?;
+        let guard = self.cookies.lock().map_err(|_| anyhow!("cookie lock poisoned"))?;
         guard.save(&self.cookie_path)
     }
 
     fn apply_cookie_header(&self, req: reqwest::RequestBuilder) -> Result<reqwest::RequestBuilder> {
-        let guard = self
-            .cookies
-            .lock()
-            .map_err(|_| anyhow!("cookie lock poisoned"))?;
+        let guard = self.cookies.lock().map_err(|_| anyhow!("cookie lock poisoned"))?;
         if let Some(header) = guard.header_value() {
             Ok(req.header(COOKIE, header))
         } else {
@@ -242,10 +234,7 @@ impl AccountManager {
         let req = self.apply_cookie_header(req)?;
         let res = req.send().await?;
         {
-            let mut guard = self
-                .cookies
-                .lock()
-                .map_err(|_| anyhow!("cookie lock poisoned"))?;
+            let mut guard = self.cookies.lock().map_err(|_| anyhow!("cookie lock poisoned"))?;
             guard.absorb_set_cookie(res.headers());
         }
         let _ = self.persist_cookies();
@@ -263,12 +252,7 @@ impl AccountManager {
         }
         let url = format!("{}/action/code", api_base());
         let res = self
-            .send(
-                self.http
-                    .post(&url)
-                    .header("Content-Type", "text/plain")
-                    .body(email),
-            )
+            .send(self.http.post(&url).header("Content-Type", "text/plain").body(email))
             .await?;
         if !res.status().is_success() {
             let status = res.status();
@@ -282,11 +266,7 @@ impl AccountManager {
         Ok(())
     }
 
-    pub async fn login(
-        &self,
-        email: std::string::String,
-        code: std::string::String,
-    ) -> Result<AccountState> {
+    pub async fn login(&self, email: std::string::String, code: std::string::String) -> Result<AccountState> {
         let email = email.trim().to_string();
         let code = code.trim().to_string();
         if email.is_empty() || code.is_empty() {
@@ -294,20 +274,12 @@ impl AccountManager {
         }
         let url = format!("{}/action/verify", api_base());
         let res = self
-            .send(
-                self.http
-                    .post(&url)
-                    .json(&json!({ "email": email, "password": code })),
-            )
+            .send(self.http.post(&url).json(&json!({ "email": email, "password": code })))
             .await?;
         if !res.status().is_success() {
             let status = res.status();
             let text = res.text().await.unwrap_or_default();
-            bail!(
-                "Login failed ({status}{}){}",
-                status_hint(status),
-                format_body(&text)
-            );
+            bail!("Login failed ({status}{}){}", status_hint(status), format_body(&text));
         }
 
         let info = self.fetch_user_info().await?;
@@ -334,10 +306,7 @@ impl AccountManager {
         }
 
         {
-            let mut guard = self
-                .cookies
-                .lock()
-                .map_err(|_| anyhow!("cookie lock poisoned"))?;
+            let mut guard = self.cookies.lock().map_err(|_| anyhow!("cookie lock poisoned"))?;
             guard.clear();
         }
         self.persist_cookies()?;
@@ -365,12 +334,8 @@ impl AccountManager {
             );
         }
         let text = res.text().await?;
-        serde_json::from_str::<UserInfoResponse>(&text).with_context(|| {
-            format!(
-                "User info decode failed; body={}",
-                truncate(&text, 200)
-            )
-        })
+        serde_json::from_str::<UserInfoResponse>(&text)
+            .with_context(|| format!("User info decode failed; body={}", truncate(&text, 200)))
     }
 
     pub async fn restore_session(&self) -> Result<AccountState> {
@@ -416,9 +381,8 @@ impl AccountManager {
             );
         }
         let text = res.text().await?;
-        let body = serde_json::from_str::<TokenResponse>(&text).with_context(|| {
-            format!("Token decode failed; body={}", truncate(&text, 200))
-        })?;
+        let body = serde_json::from_str::<TokenResponse>(&text)
+            .with_context(|| format!("Token decode failed; body={}", truncate(&text, 200)))?;
         Ok(extract_token(body).unwrap_or_default())
     }
 
@@ -451,9 +415,7 @@ impl AccountManager {
 
     async fn download_clash_config(&self, token: &str) -> Result<std::string::String> {
         let url = format!("{}/external/user/subscription/config/clash/{token}", api_base());
-        let res = self
-            .send(self.http.get(&url).header(USER_AGENT, CLASH_UA))
-            .await?;
+        let res = self.send(self.http.get(&url).header(USER_AGENT, CLASH_UA)).await?;
         if !res.status().is_success() {
             let status = res.status();
             let text = res.text().await.unwrap_or_default();
@@ -472,10 +434,7 @@ impl AccountManager {
 
     pub async fn refresh_subscription(&self) -> Result<AccountState> {
         let mut token = self.ensure_token().await?;
-        let config_url = format!(
-            "{}/external/user/subscription/config/clash/{token}",
-            api_base()
-        );
+        let config_url = format!("{}/external/user/subscription/config/clash/{token}", api_base());
 
         // Prefer downloading with our clash UA; fall back to activate+retry once.
         let yaml = match self.download_clash_config(&token).await {
@@ -533,9 +492,8 @@ impl AccountManager {
             );
         }
         let text = res.text().await?;
-        let body: StatsResponse = serde_json::from_str(&text).with_context(|| {
-            format!("Statistics decode failed; body={}", truncate(&text, 200))
-        })?;
+        let body: StatsResponse = serde_json::from_str(&text)
+            .with_context(|| format!("Statistics decode failed; body={}", truncate(&text, 200)))?;
         let data = body.data.unwrap_or_default();
         Ok(SubscriptionStats {
             data_remain: data.data.as_ref().map(|d| d.remain).unwrap_or(0.0),
@@ -688,9 +646,7 @@ fn find_existing_uid(items: &[PrfItem], url: &str, meta_uid: Option<&str>) -> Op
 
 async fn import_or_refresh_profile(url: &str, yaml: &str) -> Result<std::string::String> {
     let _guard = PROFILE_WRITE_LOCK.lock().await;
-    let meta = AccountManager::paths()
-        .ok()
-        .map(|(_, meta_path)| load_meta(&meta_path));
+    let meta = AccountManager::paths().ok().map(|(_, meta_path)| load_meta(&meta_path));
     let meta_uid = meta.as_ref().and_then(|m| m.profile_uid.as_deref());
 
     let profiles = Config::profiles().await;
@@ -786,9 +742,7 @@ async fn set_current_profile(uid: &str) -> Result<()> {
 
 /// Returns the subscription profile uid if one exists (for logout cleanup).
 pub async fn find_subscription_profile_uid() -> Option<std::string::String> {
-    let meta = AccountManager::paths()
-        .map(|(_, p)| load_meta(&p))
-        .unwrap_or_default();
+    let meta = AccountManager::paths().map(|(_, p)| load_meta(&p)).unwrap_or_default();
     let profiles = Config::profiles().await;
     let items = profiles.data_arc().items.clone().unwrap_or_default();
     find_existing_uid(&items, "", meta.profile_uid.as_deref()).map(|u| u.to_string())
