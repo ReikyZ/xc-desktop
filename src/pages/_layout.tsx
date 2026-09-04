@@ -7,6 +7,7 @@ import {
   Paper,
   SvgIcon,
   ThemeProvider,
+  Typography,
 } from '@mui/material'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -31,6 +32,8 @@ import {
 import { useI18n } from '@/hooks/use-i18n'
 import { useVerge } from '@/hooks/use-verge'
 import { useWindowDecorations } from '@/hooks/use-window'
+import LoginPage from '@/pages/login'
+import { useAccount } from '@/providers/account-provider'
 import { useThemeMode } from '@/services/states'
 import getSystem from '@/utils/get-system'
 
@@ -54,10 +57,27 @@ dayjs.extend(relativeTime)
 const OS = getSystem()
 const SENSORS = [PointerSensor, KeyboardSensor]
 
+function SessionSplash({ message }: { message: string }) {
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        bgcolor: 'background.default',
+      }}
+    >
+      <Typography color="text.secondary">{message}</Typography>
+    </Box>
+  )
+}
+
 const Layout = () => {
   const mode = useThemeMode()
   const isDark = mode !== 'light'
   const { t } = useTranslation()
+  const { ready: accountReady, loggedIn } = useAccount()
   const { theme } = useCustomTheme()
   const { verge, mutateVerge, patchVerge } = useVerge()
   const { language } = verge ?? {}
@@ -172,6 +192,21 @@ const Layout = () => {
       switchLanguage(language)
     }
   }, [language, switchLanguage])
+
+  if (!accountReady) {
+    return <SessionSplash message="Restoring session…" />
+  }
+
+  if (!loggedIn) {
+    if (!theme) {
+      return <SessionSplash message="Restoring session…" />
+    }
+    return (
+      <ThemeProvider theme={theme}>
+        <LoginPage />
+      </ThemeProvider>
+    )
+  }
 
   if (!themeReady) {
     return (
